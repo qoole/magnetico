@@ -17,8 +17,8 @@ type Feed struct {
 }
 
 type Item struct {
-	Title    string    `xml:"channel>title"`
-	Torrents []Torrent `xml:"channel>item"`
+	Title    string    `xml:"title"`
+	Torrents []Torrent `xml:"item"`
 }
 
 type Torrent struct {
