@@ -13,11 +13,11 @@ import (
 type Feed struct {
 	XMLName xml.Name `xml:"rss"`
 	Version string   `xml:"version,attr"`
-	Channel Item
+	Title   string   `xml:"title"`
+	Channel Item 	 `xml:"channel"`
 }
 
 type Item struct {
-	Title    string    `xml:"item>title"`
 	Torrents []Torrent `xml:"item>item"`
 }
 
