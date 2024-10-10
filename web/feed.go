@@ -64,8 +64,8 @@ func feedHandler(w http.ResponseWriter, r *http.Request) {
 
 	feed := Feed{
 		Version: "2.0",
+		Title:    title,
 		Channel: Item{
-			Title:    title,
 			Torrents: []Torrent{},
 		},
 	}
