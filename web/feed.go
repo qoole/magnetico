@@ -13,12 +13,12 @@ import (
 type Feed struct {
 	XMLName xml.Name `xml:"rss"`
 	Version string   `xml:"version,attr"`
-	Title   string   `xml:"title"`
-	Channel Item 	 `xml:"channel"`
+	Channel Item     `xml:"channel"`
 }
 
 type Item struct {
-	Torrents []Torrent `xml:"item>item"`
+	Title    string    `xml:"channel>title"`
+	Torrents []Torrent `xml:"channel>item"`
 }
 
 type Torrent struct {
@@ -64,8 +64,8 @@ func feedHandler(w http.ResponseWriter, r *http.Request) {
 
 	feed := Feed{
 		Version: "2.0",
-		Title:    title,
 		Channel: Item{
+			Title:    title,
 			Torrents: []Torrent{},
 		},
 	}
