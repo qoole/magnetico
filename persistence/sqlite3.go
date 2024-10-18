@@ -639,14 +639,14 @@ func (db *sqlite3Database) setupDatabase() error {
 
             -- Add column 'modified_on'
 			-- BEWARE: code needs to be updated before January 1, 3000 (32503680000)!
-			ALTER TABLE torrents ADD COLUMN modified_on INTEGER NOT NULL
-				CHECK (modified_on >= discovered_on AND (updated_on IS NOT NULL OR modified_on >= updated_on))
-				DEFAULT 32503680000
-			;
+ALTER TABLE torrents ADD COLUMN modified_on INTEGER NOT NULL
+CHECK (modified_on >= discovered_on AND (updated_on IS NOT NULL OR modified_on >= updated_on))
+DEFAULT 32503680000
+;
 
 			-- Set 'modified_on' value of all rows to 'discovered_on' or 'updated_on', whichever is
             -- greater; beware that 'updated_on' can be NULL too.			
-			UPDATE torrents SET modified_on = (SELECT MAX(discovered_on, IFNULL(updated_on, 0)));
+			UPDATE torrents SET modified_on = (SELECT MAX(discovered_on, IFNULL(updated_on, 0))) where modified_on is null;
 
 			CREATE INDEX modified_on_index ON torrents (modified_on);
 
