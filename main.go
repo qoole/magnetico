@@ -108,9 +108,13 @@ func main() {
 			}
 
 		case md := <-metadataSink.Drain():
+
+			start := time.Now()
 			if err := database.AddNewTorrent(md.InfoHash, md.Name, md.Files); err != nil {
 				go stats.GetInstance().IncDBError(true)
 			}
+			elapsed := time.Since(start)
+			log.Printf("MDSink took %s", elapsed)
 
 		case <-interruptChan:
 			trawlingManager.Terminate()
