@@ -103,7 +103,7 @@ func main() {
 			start := time.Now()
 			exists, err := database.DoesTorrentExist(infoHash[:])
 			elapsed := time.Since(start)
-			log.Printf("DoesTorrentExist took %s", elapsed)
+			log.Printf("DoesTorrentExist (%v) took %s", exists, elapsed)
 
 			if err != nil {
 				go stats.GetInstance().IncDBError(false)
