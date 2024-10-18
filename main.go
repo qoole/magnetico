@@ -100,7 +100,11 @@ func main() {
 		case result := <-trawlingManager.Output():
 			infoHash := result.InfoHash()
 
+			start := time.Now()
 			exists, err := database.DoesTorrentExist(infoHash[:])
+			elapsed := time.Since(start)
+			log.Printf("DoesTorrentExist took %s", elapsed)
+
 			if err != nil {
 				go stats.GetInstance().IncDBError(false)
 			} else if !exists {
