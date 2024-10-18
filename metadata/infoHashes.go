@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"log"
 	"net"
 	"sync"
 )
@@ -99,4 +100,5 @@ func (ih *infoHashes) flush(infoHash [20]byte) {
 	ih.Lock()
 	defer ih.Unlock()
 	delete(ih.infoHashes, infoHash)
+	log.Printf("%d infoHashes", len(ih.infoHashes))
 }
