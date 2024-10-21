@@ -247,6 +247,7 @@ func (db *postgresDatabase) QueryTorrents(
 		safeLastID,
 		limit,
 	)
+	log.Printf("%s\n%s %d %f %d %d", sqlQuery, query, epoch, safeLastOrderedValue, safeLastID, limit)
 
 	if err != nil {
 		return nil, errors.New("query error " + err.Error())
