@@ -3,6 +3,7 @@ package web
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -184,9 +185,13 @@ func apiTorrents(w http.ResponseWriter, r *http.Request) {
 		tq.Limit = 20
 	}
 
+	start := time.Now()
 	torrents, err := database.QueryTorrents(
 		tq.Query, tq.Epoch, orderBy,
 		tq.Ascending, tq.Limit, tq.LastOrderedValue, tq.LastID)
+	elapsed := time.Since(start)
+	log.Printf("QueryTorrents (torrents.go) took %s", elapsed)
+
 	if err != nil {
 		http.Error(w, "QueryTorrents: "+err.Error(), http.StatusInternalServerError)
 		return

@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/xml"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -47,7 +48,7 @@ func feedHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		title = query + " - magnetico"
 	}
-
+	start := time.Now()
 	torrents, err := database.QueryTorrents(
 		query,
 		time.Now().Unix(),
@@ -57,6 +58,9 @@ func feedHandler(w http.ResponseWriter, r *http.Request) {
 		nil,
 		nil,
 	)
+	elapsed := time.Since(start)
+	log.Printf("QueryTorrents (feed.go) took %s", elapsed)
+
 	if err != nil {
 		http.Error(w, "query torrent "+err.Error(), http.StatusInternalServerError)
 		return
