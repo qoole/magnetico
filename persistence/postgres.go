@@ -238,7 +238,7 @@ func (db *postgresDatabase) QueryTorrents(
 			},
 		},
 	)
-
+	log.Printf("%s\n%d %f %d %d", query, epoch, safeLastOrderedValue, safeLastID, limit)
 	rows, err := db.conn.Query(
 		sqlQuery,
 		query,
