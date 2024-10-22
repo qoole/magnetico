@@ -104,13 +104,13 @@ func apiTorrents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var tq struct {
-		Epoch            int64    `schema:"epoch"`
-		Query            string   `schema:"query"`
-		OrderBy          string   `schema:"orderBy"`
-		Ascending        bool     `schema:"ascending"`
-		LastOrderedValue *float64 `schema:"lastOrderedValue"`
-		LastID           *uint64  `schema:"lastID"`
-		Limit            uint64   `schema:"limit"`
+		Epoch            int64   `schema:"epoch"`
+		Query            string  `schema:"query"`
+		OrderBy          string  `schema:"orderBy"`
+		Ascending        bool    `schema:"ascending"`
+		LastOrderedValue *uint64 `schema:"lastOrderedValue"`
+		LastID           *uint64 `schema:"lastID"`
+		Limit            uint64  `schema:"limit"`
 	}
 
 	err := r.ParseForm()
@@ -158,7 +158,7 @@ func apiTorrents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Form.Has("lastOrderedValue") {
-		lastOrderedValue, err := strconv.ParseFloat(r.Form.Get("lastOrderedValue"), 64)
+		lastOrderedValue, err := strconv.ParseUint(r.Form.Get("lastOrderedValue"), 10, 64)
 		if err != nil {
 			http.Error(w, "error while parsing the URL: "+err.Error(), http.StatusBadRequest)
 			return

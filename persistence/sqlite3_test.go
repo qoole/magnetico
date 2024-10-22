@@ -128,7 +128,7 @@ func Test_sqlite3Database_QueryTorrents(t *testing.T) {
 		orderBy          OrderingCriteria
 		ascending        bool
 		limit            uint64
-		lastOrderedValue *float64
+		lastOrderedValue *uint64
 		lastID           *uint64
 		want             []TorrentMetadata
 		wantErr          bool

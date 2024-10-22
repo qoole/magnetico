@@ -96,7 +96,7 @@ func (instance *zeromq) QueryTorrents(
 	orderBy OrderingCriteria,
 	ascending bool,
 	limit uint64,
-	lastOrderedValue *float64,
+	lastOrderedValue *uint64,
 	lastID *uint64,
 ) ([]TorrentMetadata, error) {
 	return nil, errors.New("query not supported")

@@ -178,13 +178,13 @@ func (db *postgresDatabase) QueryTorrents(
 	orderBy OrderingCriteria,
 	ascending bool,
 	limit uint64,
-	lastOrderedValue *float64,
+	lastOrderedValue *uint64,
 	lastID *uint64,
 ) ([]TorrentMetadata, error) {
 	var (
-		safeLastID           uint64  = 0
-		safeLastOrderedValue float64 = 0
-		querySkeleton                = `
+		safeLastID           uint64 = 0
+		safeLastOrderedValue uint64 = 0
+		querySkeleton               = `
 		SELECT
 			id,
 			info_hash,
@@ -247,7 +247,7 @@ func (db *postgresDatabase) QueryTorrents(
 		safeLastID,
 		limit,
 	)
-	log.Printf("%s\n%s %d %f %d %d", sqlQuery, query, epoch, safeLastOrderedValue, safeLastID, limit)
+	log.Printf("%s\n%s %d %d %d %d", sqlQuery, query, epoch, safeLastOrderedValue, safeLastID, limit)
 	elapsed := time.Since(start)
 	log.Printf("Query itself took %s", elapsed)
 

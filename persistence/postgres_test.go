@@ -402,7 +402,7 @@ func TestPostgresDatabase_QueryTorrents(t *testing.T) {
 	orderBy := ByTotalSize
 	ascending := true
 	limit := uint64(10)
-	lastOrderedValue := float64(100)
+	lastOrderedValue := uint64(100)
 	lastID := uint64(5)
 
 	rows := sqlmock.NewRows([]string{"id", "info_hash", "name", "total_size", "discovered_on", "n_files", "relevance"}).

@@ -30,7 +30,7 @@ type Database interface {
 		orderBy OrderingCriteria,
 		ascending bool,
 		limit uint64,
-		lastOrderedValue *float64,
+		lastOrderedValue *uint64,
 		lastID *uint64,
 	) ([]TorrentMetadata, error)
 	// GetTorrents returns the TorrentExtMetadata for the torrent of the given InfoHash. Will return
