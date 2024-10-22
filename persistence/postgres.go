@@ -238,7 +238,7 @@ func (db *postgresDatabase) QueryTorrents(
 			},
 		},
 	)
-
+	start := time.Now()
 	rows, err := db.conn.Query(
 		sqlQuery,
 		query,
@@ -248,6 +248,8 @@ func (db *postgresDatabase) QueryTorrents(
 		limit,
 	)
 	log.Printf("%s\n%s %d %f %d %d", sqlQuery, query, epoch, safeLastOrderedValue, safeLastID, limit)
+	elapsed := time.Since(start)
+	log.Printf("Query itself took %s", elapsed)
 
 	if err != nil {
 		return nil, errors.New("query error " + err.Error())
