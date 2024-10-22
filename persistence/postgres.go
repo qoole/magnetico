@@ -44,8 +44,8 @@ func makePostgresDatabase(url_ *url.URL) (Database, error) {
 
 	// https://github.com/mattn/go-sqlite3/issues/618
 	db.conn.SetConnMaxLifetime(0) // https://golang.org/pkg/database/sql/#DB.SetConnMaxLifetime
-	db.conn.SetMaxOpenConns(30)
-	db.conn.SetMaxIdleConns(30)
+	db.conn.SetMaxOpenConns(0)
+	db.conn.SetMaxIdleConns(0)
 
 	if err := db.setupDatabase(); err != nil {
 		return nil, errors.New("setupDatabase " + err.Error())
