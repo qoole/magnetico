@@ -224,9 +224,9 @@ func (db *postgresDatabase) QueryTorrents(
 		}, template.FuncMap{
 			"GTEorLTE": func(ascending bool) string {
 				if ascending {
-					return ">"
-				} else {
 					return "<"
+				} else {
+					return ">"
 				}
 			},
 			"AscOrDesc": func(ascending bool) string {
