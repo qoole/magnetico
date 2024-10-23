@@ -198,7 +198,7 @@ func (db *postgresDatabase) QueryTorrents(
 			name ILIKE CONCAT('%',$1::text,'%') AND
 			discovered_on <= $2 AND
 			{{.OrderOn}} > $3 AND
-			id {{GTEorLTE .Ascending}} $4
+			id > $4
 		ORDER BY {{.OrderOn}} {{AscOrDesc .Ascending}}, id {{AscOrDesc .Ascending}}
 		LIMIT $5;
 	`
