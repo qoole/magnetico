@@ -195,7 +195,7 @@ func (db *postgresDatabase) QueryTorrents(
 			0
 		FROM torrents
 		WHERE
-			name ILIKE CONCAT('%',$1::text,'%') AND
+			{{QueryString .Query}}
 			discovered_on <= $2 AND
 			{{.OrderOn}} > $3 AND
 			id > $4
@@ -218,10 +218,13 @@ func (db *postgresDatabase) QueryTorrents(
 		struct {
 			OrderOn   string
 			Ascending bool
+			Query     string
 		}{
 			OrderOn:   db.orderOn(orderBy),
 			Ascending: ascending,
-		}, template.FuncMap{
+			Query:     query,
+		},
+		template.FuncMap{
 			"GTEorLTE": func(ascending bool) string {
 				if ascending {
 					return "<"
@@ -235,6 +238,20 @@ func (db *postgresDatabase) QueryTorrents(
 				} else {
 					return "DESC"
 				}
+			},
+			"QueryString": func(query string) string {
+				//name ILIKE CONCAT('%',$1::text,'%') AND
+				var outquery string = "("
+				split := strings.Split(query, " ")
+				for i, s := range split {
+					if i > 0 {
+						outquery += " AND "
+					}
+
+					outquery += "name ILIKE CONCAT('%','" + s + "'::text,'%')"
+				}
+				outquery += ") AND"
+				return outquery
 			},
 		},
 	)
