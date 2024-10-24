@@ -196,11 +196,11 @@ func (db *postgresDatabase) QueryTorrents(
 		FROM torrents
 		WHERE
 			{{QueryString .Query}}
-			discovered_on <= $2 AND
-			{{.OrderOn}} > $3 AND
-			id > $4
+			discovered_on <= $1 AND
+			{{.OrderOn}} > $2 AND
+			id > $3
 		ORDER BY {{.OrderOn}} {{AscOrDesc .Ascending}}, id {{AscOrDesc .Ascending}}
-		LIMIT $5;
+		LIMIT $4;
 	`
 	)
 
@@ -258,7 +258,6 @@ func (db *postgresDatabase) QueryTorrents(
 	start := time.Now()
 	rows, err := db.conn.Query(
 		sqlQuery,
-		query,
 		epoch,
 		safeLastOrderedValue,
 		safeLastID,
