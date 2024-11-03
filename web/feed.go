@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"tgragnato.it/magnetico/persistence"
@@ -33,6 +34,7 @@ type Torrent struct {
 
 func feedHandler(w http.ResponseWriter, r *http.Request) {
 	var query, title string
+	var count int
 	switch len(r.URL.Query()["query"]) {
 	case 0:
 		query = ""
@@ -41,6 +43,20 @@ func feedHandler(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.Error(w, "query supplied multiple times!", http.StatusBadRequest)
 		return
+	}
+
+	switch len(r.URL.Query()["count"]) {
+	case 0:
+		count = 20
+	case 1:
+		var scount = r.URL.Query()["count"][0]
+		if i, err := strconv.Atoi(scount); err == nil {
+			count = i
+		} else {
+			count = 20
+		}
+	default:
+		count = 20
 	}
 
 	if query == "" {
@@ -54,7 +70,7 @@ func feedHandler(w http.ResponseWriter, r *http.Request) {
 		time.Now().Unix(),
 		persistence.ByDiscoveredOn,
 		false,
-		20,
+		uint64(count),
 		nil,
 		nil,
 	)
