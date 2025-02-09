@@ -10,7 +10,7 @@ import (
 
 type zeromq struct{}
 
-func makeZeroMQ(url_ *url.URL) (Database, error) {
+func makeZeroMQ(_ *url.URL) (Database, error) {
 	return &zeromq{}, nil
 }
 

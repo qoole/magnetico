@@ -140,7 +140,7 @@ func (r *rabbitMQ) GetNumberOfQueryTorrents(query string, epoch int64) (uint64, 
 	return 0, nil
 }
 
-func (r *rabbitMQ) QueryTorrents(query string, epoch int64, orderBy OrderingCriteria, ascending bool, limit uint64, lastOrderedValue *float64, lastID *uint64) ([]TorrentMetadata, error) {
+func (r *rabbitMQ) QueryTorrents(query string, epoch int64, orderBy OrderingCriteria, ascending bool, limit uint64, lastOrderedValue *uint64, lastID *uint64) ([]TorrentMetadata, error) {
 	return nil, errors.New("query not supported")
 }
 

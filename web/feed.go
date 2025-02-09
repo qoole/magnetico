@@ -34,7 +34,6 @@ type Torrent struct {
 
 func feedHandler(w http.ResponseWriter, r *http.Request) {
 	var query, title string
-	var count int
 	switch len(r.URL.Query()["query"]) {
 	case 0:
 		query = ""

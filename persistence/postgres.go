@@ -240,7 +240,6 @@ func (db *postgresDatabase) GetNumberOfQueryTorrents(query string, epoch int64) 
 		return uint64(*n), nil
 	}
 }
-
 func (db *postgresDatabase) QueryTorrents(
 	query string,
 	epoch int64,
