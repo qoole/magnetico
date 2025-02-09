@@ -45,18 +45,12 @@ func feedHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	switch len(r.URL.Query()["count"]) {
-	case 0:
-		count = 20
-	case 1:
-		var scount = r.URL.Query()["count"][0]
-		if i, err := strconv.Atoi(scount); err == nil {
-			count = i
-		} else {
-			count = 20
+	count := uint64(20)
+	if len(r.URL.Query()["count"]) == 1 {
+		i, err := strconv.Atoi(r.URL.Query()["count"][0])
+		if err == nil && i > 0 {
+			count = uint64(i)
 		}
-	default:
-		count = 20
 	}
 
 	if query == "" {
@@ -70,7 +64,7 @@ func feedHandler(w http.ResponseWriter, r *http.Request) {
 		time.Now().Unix(),
 		persistence.ByDiscoveredOn,
 		false,
-		uint64(count),
+		count,
 		nil,
 		nil,
 	)

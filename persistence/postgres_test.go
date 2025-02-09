@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/sha1"
+	"fmt"
 	mrand "math/rand"
 	"reflect"
 	"testing"
@@ -102,6 +103,116 @@ func TestDoesTorrentExist(t *testing.T) {
 	}
 }
 
+func TestPostgresDatabase_GetExactCount(t *testing.T) {
+	t.Parallel()
+
+	conn, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+
+	db := &postgresDatabase{conn: conn}
+
+	// Test case 1: Valid row returned
+	rows := sqlmock.NewRows([]string{"exact_count"}).AddRow(int64(10))
+	mock.ExpectQuery("SELECT last_value::BIGINT AS exact_count FROM seq_torrents_id;").
+		WillReturnRows(rows)
+
+	count, err := db.getExactCount()
+	if err != nil {
+		t.Error(err)
+	}
+	if count != 10 {
+		t.Errorf("Expected count to be 10, but got %d", count)
+	}
+
+	// Test case 2: No rows returned
+	rows = sqlmock.NewRows([]string{"exact_count"})
+	mock.ExpectQuery("SELECT last_value::BIGINT AS exact_count FROM seq_torrents_id;").
+		WillReturnRows(rows)
+
+	count, err = db.getExactCount()
+	if err == nil {
+		t.Error("Expected error for no rows, but got nil")
+	}
+	if count != 0 {
+		t.Errorf("Expected count to be 0, but got %d", count)
+	}
+
+	// Test case 3: Null value returned
+	rows = sqlmock.NewRows([]string{"exact_count"}).AddRow(nil)
+	mock.ExpectQuery("SELECT last_value::BIGINT AS exact_count FROM seq_torrents_id;").
+		WillReturnRows(rows)
+
+	count, err = db.getExactCount()
+	if err != nil {
+		t.Error(err)
+	}
+	if count != 0 {
+		t.Errorf("Expected count to be 0 for null value, but got %d", count)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestPostgresDatabase_GetFuzzyCount(t *testing.T) {
+	t.Parallel()
+
+	conn, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+
+	db := &postgresDatabase{conn: conn}
+
+	// Test case 1: Valid row returned
+	rows := sqlmock.NewRows([]string{"estimate_count"}).AddRow(int64(10))
+	mock.ExpectQuery("SELECT reltuples::BIGINT AS estimate_count FROM pg_class WHERE relname='torrents';").
+		WillReturnRows(rows)
+
+	count, err := db.getFuzzyCount()
+	if err != nil {
+		t.Error(err)
+	}
+	if count != 10 {
+		t.Errorf("Expected count to be 10, but got %d", count)
+	}
+
+	// Test case 2: No rows returned
+	rows = sqlmock.NewRows([]string{"estimate_count"})
+	mock.ExpectQuery("SELECT reltuples::BIGINT AS estimate_count FROM pg_class WHERE relname='torrents';").
+		WillReturnRows(rows)
+
+	count, err = db.getFuzzyCount()
+	if err == nil {
+		t.Error("Expected error for no rows, but got nil")
+	}
+	if count != 0 {
+		t.Errorf("Expected count to be 0, but got %d", count)
+	}
+
+	// Test case 3: Null value returned
+	rows = sqlmock.NewRows([]string{"estimate_count"}).AddRow(nil)
+	mock.ExpectQuery("SELECT reltuples::BIGINT AS estimate_count FROM pg_class WHERE relname='torrents';").
+		WillReturnRows(rows)
+
+	count, err = db.getFuzzyCount()
+	if err != nil {
+		t.Error(err)
+	}
+	if count != 0 {
+		t.Errorf("Expected count to be 0 for null value, but got %d", count)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Error(err)
+	}
+}
+
 func TestPostgresDatabase_GetNumberOfTorrents(t *testing.T) {
 	t.Parallel()
 
@@ -111,10 +222,13 @@ func TestPostgresDatabase_GetNumberOfTorrents(t *testing.T) {
 	}
 	defer conn.Close()
 
-	rows := sqlmock.NewRows([]string{"exact_count"}).AddRow(10)
-	mock.ExpectQuery("SELECT COUNT\\(\\*\\)::BIGINT AS exact_count FROM torrents;").WillReturnRows(rows)
-
 	db := &postgresDatabase{conn: conn}
+
+	// Test case 1: getExactCount succeeds
+	rows := sqlmock.NewRows([]string{"exact_count"}).AddRow(int64(10))
+	mock.ExpectQuery("SELECT last_value::BIGINT AS exact_count FROM seq_torrents_id;").
+		WillReturnRows(rows)
+
 	count, err := db.GetNumberOfTorrents()
 	if err != nil {
 		t.Error(err)
@@ -122,37 +236,109 @@ func TestPostgresDatabase_GetNumberOfTorrents(t *testing.T) {
 	if count != 10 {
 		t.Errorf("Expected count to be 10, but got %d", count)
 	}
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Error(err)
-	}
 
-	rows = sqlmock.NewRows([]string{"exact_count"})
-	mock.ExpectQuery("SELECT COUNT\\(\\*\\)::BIGINT AS exact_count FROM torrents;").WillReturnRows(rows)
-
-	count, err = db.GetNumberOfTorrents()
-	if err == nil {
-		t.Error("no rows returned for query without corresponding error")
-	}
-	if count != 0 {
-		t.Errorf("Expected count to be 0, but got %d", count)
-	}
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Error(err)
-	}
-
-	rows = sqlmock.NewRows([]string{"exact_count"}).AddRow(nil)
-	mock.ExpectQuery("SELECT COUNT\\(\\*\\)::BIGINT AS exact_count FROM torrents;").WillReturnRows(rows)
+	// Test case 2: getExactCount fails, getFuzzyCount succeeds
+	mock.ExpectQuery("SELECT last_value::BIGINT AS exact_count FROM seq_torrents_id;").
+		WillReturnError(fmt.Errorf("exact count failed"))
+	rows = sqlmock.NewRows([]string{"estimate_count"}).AddRow(int64(20))
+	mock.ExpectQuery("SELECT reltuples::BIGINT AS estimate_count FROM pg_class WHERE relname='torrents';").
+		WillReturnRows(rows)
 
 	count, err = db.GetNumberOfTorrents()
 	if err != nil {
 		t.Error(err)
 	}
-	if count != 0 {
-		t.Errorf("Expected count to be 0, but got %d", count)
+	if count != 20 {
+		t.Errorf("Expected count to be 20, but got %d", count)
 	}
+
+	// Test case 3: both getExactCount and getFuzzyCount fail
+	mock.ExpectQuery("SELECT last_value::BIGINT AS exact_count FROM seq_torrents_id;").
+		WillReturnError(fmt.Errorf("exact count failed"))
+	mock.ExpectQuery("SELECT reltuples::BIGINT AS estimate_count FROM pg_class WHERE relname='torrents';").
+		WillReturnError(fmt.Errorf("fuzzy count failed"))
+
+	_, err = db.GetNumberOfTorrents()
+	if err == nil {
+		t.Error("Expected error when both counts fail, but got nil")
+	}
+
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Error(err)
 	}
+}
+
+func TestPostgresDatabase_GetNumberOfQueryTorrents(t *testing.T) {
+	t.Parallel()
+
+	conn, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("An error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer conn.Close()
+
+	pgDb := &postgresDatabase{conn: conn}
+
+	query := "test-query"
+	epoch := int64(1609459200) // 2021-01-01 00:00:00 UTC
+
+	rows := sqlmock.NewRows([]string{"count"}).AddRow(int64(10))
+	mock.ExpectQuery(`SELECT COUNT\(\*\) FROM torrents WHERE name ILIKE CONCAT\('%',\$1::text,'%'\) AND discovered_on <= \$2;`).
+		WithArgs(query, epoch).
+		WillReturnRows(rows)
+
+	result, err := pgDb.GetNumberOfQueryTorrents(query, epoch)
+
+	if err != nil {
+		t.Errorf("Expected no error, but got %v", err)
+	}
+
+	if result != uint64(10) {
+		t.Errorf("Expected result to be 10, but got %d", result)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unmet expectations: %s", err)
+	}
+
+	rows = sqlmock.NewRows([]string{"count"})
+	mock.ExpectQuery(`SELECT COUNT\(\*\) FROM torrents WHERE name ILIKE CONCAT\('%',\$1::text,'%'\) AND discovered_on <= \$2;`).
+		WithArgs(query, epoch).
+		WillReturnRows(rows)
+
+	result, err = pgDb.GetNumberOfQueryTorrents(query, epoch)
+
+	if err == nil {
+		t.Error("Expected an error, but got none")
+	}
+
+	if result != uint64(0) {
+		t.Errorf("Expected result to be 0, but got %d", result)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unmet expectations: %s", err)
+	}
+
+	rows = sqlmock.NewRows([]string{"count"}).AddRow(nil)
+	mock.ExpectQuery(`SELECT COUNT\(\*\) FROM torrents WHERE name ILIKE CONCAT\('%',\$1::text,'%'\) AND discovered_on <= \$2;`).
+		WithArgs(query, epoch).
+		WillReturnRows(rows)
+
+	result, err = pgDb.GetNumberOfQueryTorrents(query, epoch)
+
+	if err != nil {
+		t.Errorf("Expected no error, but got %v", err)
+	}
+
+	if result != uint64(0) {
+		t.Errorf("Expected result to be 0, but got %d", result)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unmet expectations: %s", err)
+	}
+
 }
 
 func TestPostgresDatabase_Close(t *testing.T) {
@@ -419,10 +605,10 @@ func TestPostgresDatabase_QueryTorrents(t *testing.T) {
 				0
 			FROM torrents
 			WHERE
-				name LIKE CONCAT\('%',\$1::text,'%'\) AND
+				\(\$1::text = '' OR name ILIKE CONCAT\('%',\$1::text,'%'\)\) AND
 				discovered_on <= \$2 AND
-				total_size > \$3 AND
-				id > \$4
+				\(\$3 = 0 OR total_size > \$3\) AND
+				\(\$4 = 0 OR id > \$4\)
 			ORDER BY total_size ASC, id ASC
 			LIMIT \$5;
 		`).
@@ -479,10 +665,10 @@ func TestPostgresDatabase_QueryTorrents(t *testing.T) {
 				0
 			FROM torrents
 			WHERE
-				name LIKE CONCAT\('%',\$1::text,'%'\) AND
+				\(\$1::text = '' OR name ILIKE CONCAT\('%',\$1::text,'%'\)\) AND
 				discovered_on <= \$2 AND
-				total_size > \$3 AND
-				id > \$4
+				\(\$3 = 0 OR total_size > \$3\) AND
+				\(\$4 = 0 OR id > \$4\)
 			ORDER BY total_size ASC, id ASC
 			LIMIT \$5;
 		`).

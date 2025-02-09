@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"time"
 
-	g "github.com/maragudk/gomponents"
-	c "github.com/maragudk/gomponents/components"
-	. "github.com/maragudk/gomponents/html"
+	g "maragu.dev/gomponents"
+	c "maragu.dev/gomponents/components"
+	. "maragu.dev/gomponents/html"
 	"tgragnato.it/magnetico/persistence"
 )
 
@@ -203,6 +203,100 @@ func apiTorrents(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func apiTorrentsTotal(w http.ResponseWriter, r *http.Request) {
+	// @lastOrderedValue AND @lastID are either both supplied or neither of them should be supplied
+	// at all; and if that is NOT the case, then return an error.
+	if q := r.URL.Query(); !((q.Get("lastOrderedValue") != "" && q.Get("lastID") != "") ||
+		(q.Get("lastOrderedValue") == "" && q.Get("lastID") == "")) {
+		http.Error(w, "`lastOrderedValue`, `lastID` must be supplied altogether, if supplied.", http.StatusBadRequest)
+		return
+	}
+
+	var tq struct {
+		Epoch int64  `schema:"epoch"`
+		Query string `schema:"query"`
+		// Controls compatibility. If this parameter is not provided or is set to false, the old logic is executed.
+		// If set to true, the new logic is enabled.
+		// The old logic returns a single number, while the new logic returns a map[string]any JSON object.
+		NewLogic bool `schema:"newLogic"`
+		// Due to potential ambiguity in the function name apiTorrentsTotal, the QueryType parameter was introduced.
+		// To use this parameter, `NewLogic=true` is required. This parameter specifies the type of query we are performing.
+		// For example, `byAll` indicates querying the total count from the database,
+		// while `byKeyword` indicates querying the total count that matches the given query.
+		QueryType string `schema:"queryType"`
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "error while parsing the URL: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if r.Form.Has("epoch") {
+		tq.Epoch, err = strconv.ParseInt(r.Form.Get("epoch"), 10, 64)
+		if err != nil {
+			http.Error(w, "error while parsing the URL: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+	} else {
+		http.Error(w, "lack required parameters while parsing the URL: `epoch`", http.StatusBadRequest)
+		return
+	}
+
+	if r.Form.Has("newLogic") {
+		tq.NewLogic, err = strconv.ParseBool(r.Form.Get("newLogic"))
+		if err != nil {
+			http.Error(w, "error while parsing the URL: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
+	tq.Query = r.Form.Get("query")
+	tq.QueryType = r.Form.Get("queryType")
+
+	w.Header().Set(ContentType, ContentTypeJson)
+
+	if !tq.NewLogic {
+
+		torrentsTotal, err := database.GetNumberOfQueryTorrents(tq.Query, tq.Epoch)
+		if err != nil {
+			http.Error(w, "GetNumberOfQueryTorrents: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if err = json.NewEncoder(w).Encode(torrentsTotal); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		return
+	}
+
+	queryCountType, err := parseQueryCountType(tq.QueryType)
+	if err != nil {
+		http.Error(w, "error while parsing the URL: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var results map[string]any
+
+	switch queryCountType {
+	case CountQueryTorrentsByKeyword:
+		total, err := database.GetNumberOfQueryTorrents(tq.Query, tq.Epoch)
+		if err != nil {
+			http.Error(w, "GetNumberOfQueryTorrents: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		results = map[string]any{"queryType": "byKeyword", "data": total}
+
+	default:
+		http.Error(w, "no suitable queryType query was matched", http.StatusBadRequest)
+		return
+	}
+
+	if err = json.NewEncoder(w).Encode(results); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
 func parseOrderBy(s string) (persistence.OrderingCriteria, error) {
 	switch s {
 	case "RELEVANCE":
@@ -228,5 +322,23 @@ func parseOrderBy(s string) (persistence.OrderingCriteria, error) {
 
 	default:
 		return persistence.ByDiscoveredOn, fmt.Errorf("unknown orderBy string: %s", s)
+	}
+}
+
+type CountQueryTorrentsType uint8
+
+const (
+	CountQueryTorrentsByAll CountQueryTorrentsType = iota
+	CountQueryTorrentsByKeyword
+)
+
+func parseQueryCountType(s string) (CountQueryTorrentsType, error) {
+	switch s {
+	case "byKeyword":
+		return CountQueryTorrentsByKeyword, nil
+	case "byAll":
+		return CountQueryTorrentsByAll, nil
+	default:
+		return CountQueryTorrentsByKeyword, fmt.Errorf("unknown queryType string: %s", s)
 	}
 }

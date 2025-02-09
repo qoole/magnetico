@@ -17,6 +17,8 @@ type Database interface {
 	// GetNumberOfTorrents returns the number of torrents saved in the database. Might be an
 	// approximation.
 	GetNumberOfTorrents() (uint, error)
+	// GetNumberOfQueryTorrents returns the total number of data records in a fuzzy query.
+	GetNumberOfQueryTorrents(query string, epoch int64) (uint64, error)
 	// QueryTorrents returns @pageSize amount of torrents,
 	// * that are discovered before @discoveredOnBefore
 	// * that match the @query if it's not empty, else all torrents
@@ -60,6 +62,8 @@ const (
 	Sqlite3 databaseEngine = iota + 1
 	Postgres
 	ZeroMQ
+	RabbitMQ
+	Bitmagnet
 )
 
 type Statistics struct {
@@ -116,6 +120,12 @@ func MakeDatabase(rawURL string) (Database, error) {
 
 	case "zeromq", "zmq":
 		return makeZeroMQ(url_)
+
+	case "amqp", "amqps":
+		return makeRabbitMQ(url_)
+
+	case "bitmagnet", "bitmagnets":
+		return makeBitmagnet(url_)
 
 	default:
 		return nil, fmt.Errorf("unknown URI scheme: `%s`", url_.Scheme)

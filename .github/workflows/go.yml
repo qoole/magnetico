@@ -12,9 +12,17 @@ jobs:
 
     name: Build
     runs-on: ubuntu-latest
+
+    permissions:
+      actions: read
+      contents: read
+      packages: read
+      security-events: read
+      pull-requests: read
+
     strategy:
       matrix:
-        go-version: [ '1.22', '1.23' ]
+        go-version: [ '1.23', '1.24.0-rc.3' ]
 
     steps:
 
@@ -27,7 +35,7 @@ jobs:
         go-version: ${{ matrix.go-version }}
 
     - name: Install cgo dependencies
-      run: sudo apt-get install -y libczmq-dev libsodium-dev
+      run: sudo apt-get update && sudo apt-get install -y libczmq-dev libsodium-dev
 
     - name: Build
       run: go build -v -tags fts5 .
@@ -36,20 +44,20 @@ jobs:
       run: CGO_ENABLED=1 go test -v -race -tags fts5 ./... -covermode=atomic -coverprofile=coverage.out
 
     - name: Upload coverage report
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       with:
         files: ./coverage.out
         flags: unittests
         verbose: true
+      if: ${{ matrix.go-version == '1.23' }}
 
     - name: GoLang CI Lint
       uses: golangci/golangci-lint-action@v6
       with:
         version: latest
-        only-new-issues: true
-        args: --timeout=5m
+      if: ${{ matrix.go-version == '1.23' }}
 
   docker:
 

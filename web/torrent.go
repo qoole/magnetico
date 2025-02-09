@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	g "github.com/maragudk/gomponents"
-	c "github.com/maragudk/gomponents/components"
-	. "github.com/maragudk/gomponents/html"
+	g "maragu.dev/gomponents"
+	c "maragu.dev/gomponents/components"
+	. "maragu.dev/gomponents/html"
 )
 
 func torrent() g.Node {
@@ -33,7 +33,7 @@ func torrent() g.Node {
 					ID("title"),
 					H2(g.Text("{{ name }}")),
 					A(
-						Href("magnet:?xt=urn:btih:{{ infoHash }}&amp;dn={{ name }}"),
+						Href("magnet:?xt=urn:btih:{{ infoHash }}&dn={{ name }}"),
 						Img(
 							Src("/static/assets/magnet.gif"),
 							Alt("Magnet link"),
