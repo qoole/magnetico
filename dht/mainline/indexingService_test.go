@@ -1,12 +1,22 @@
 package mainline
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"net"
+	"sort"
 	"strconv"
 	"testing"
 	"time"
 )
+
+func sortNodes(nodes []net.UDPAddr) {
+	sort.Slice(nodes, func(i, j int) bool {
+		if ip1, ip2 := nodes[i].IP.String(), nodes[j].IP.String(); ip1 != ip2 {
+			return ip1 < ip2
+		}
+		return nodes[i].Port < nodes[j].Port
+	})
+}
 
 func TestUint16BE(t *testing.T) {
 	t.Parallel()
@@ -37,7 +47,7 @@ func TestUint16BE(t *testing.T) {
 func TestBasicIndexingService(t *testing.T) {
 	t.Parallel()
 
-	randomPort := rand.Intn(64511) + 1024
+	randomPort := rand.IntN(64511) + 1024
 	tests := []struct {
 		name          string
 		laddr         string
@@ -140,6 +150,10 @@ func TestOnFindNodeResponse(t *testing.T) {
 			if len(gotNodes) != len(tt.wantNodes) {
 				t.Errorf("onFindNodeResponse() got %d nodes, want %d nodes", len(gotNodes), len(tt.wantNodes))
 			}
+
+			// Sort slices for a stable comparison
+			sortNodes(gotNodes)
+			sortNodes(tt.wantNodes)
 
 			for i, gotNode := range gotNodes {
 				if gotNode.IP.String() != tt.wantNodes[i].IP.String() || gotNode.Port != tt.wantNodes[i].Port {
@@ -244,6 +258,10 @@ func TestOnAnnouncePeerQuery(t *testing.T) {
 			if len(gotNodes) != len(tt.wantNodes) {
 				t.Errorf("onAnnouncePeerQuery() got %d nodes, want %d nodes", len(gotNodes), len(tt.wantNodes))
 			}
+
+			// Sort slices for a stable comparison
+			sortNodes(gotNodes)
+			sortNodes(tt.wantNodes)
 
 			for i, gotNode := range gotNodes {
 				if gotNode.IP.String() != tt.wantNodes[i].IP.String() || gotNode.Port != tt.wantNodes[i].Port {
@@ -648,6 +666,10 @@ func TestOnSampleInfohashesResponse(t *testing.T) {
 			if len(gotNodes) != len(tt.wantNodes) {
 				t.Errorf("onSampleInfohashesResponse() got %d nodes, want %d nodes", len(gotNodes), len(tt.wantNodes))
 			}
+
+			// Sort slices for a stable comparison
+			sortNodes(gotNodes)
+			sortNodes(tt.wantNodes)
 
 			for i, gotNode := range gotNodes {
 				if gotNode.IP.String() != tt.wantNodes[i].IP.String() || gotNode.Port != tt.wantNodes[i].Port {
