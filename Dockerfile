@@ -1,23 +1,27 @@
 FROM golang:alpine3.21 AS builder
 ENV CGO_ENABLED=1
 ENV CGO_CFLAGS=-D_LARGEFILE64_SOURCE
+ENV CGO_LDFLAGS='-fuse-ld=lld -static -lstdc++ -lsodium -lzmq'
 ENV CC=clang
+RUN apk add --no-cache clang lld libc-dev musl-dev libstdc++ libsodium-dev libsodium-static zeromq-dev libzmq-static
+WORKDIR /workspace/bin
+RUN ln -s magnetico magneticod
+RUN ln -s magnetico magneticow
 WORKDIR /workspace
 COPY go.mod .
 COPY go.sum .
+RUN go mod download
 COPY . .
-RUN apk add --no-cache clang lld libsodium-dev zeromq-dev czmq-dev && go mod download && go build --tags fts5 .
+RUN go build --tags fts5 -ldflags='-linkmode=external' -o bin/magnetico .
 
-FROM alpine:3.21
+FROM ghcr.io/anchore/syft:latest AS sbomgen
+COPY --from=builder /workspace/bin/magnetico /usr/bin/magnetico
+RUN ["/syft", "--output", "spdx-json=/magnetico.spdx.json", "/usr/bin/magnetico"]
+
+FROM cgr.dev/chainguard/static:latest
 WORKDIR /tmp
-COPY --from=builder /workspace/magnetico /usr/bin/
-RUN apk add --no-cache libsodium libzmq czmq \
-    && echo '#!/bin/sh' >> /usr/bin/magneticod \
-    && echo '/usr/bin/magnetico "$@" --daemon' >> /usr/bin/magneticod \
-    && chmod +x /usr/bin/magneticod \
-    && echo '#!/bin/sh' >> /usr/bin/magneticow \
-    && echo '/usr/bin/magnetico "$@" --web' >> /usr/bin/magneticow \
-    && chmod +x /usr/bin/magneticow
+COPY --from=builder /workspace/bin /usr/bin
+COPY --from=sbomgen /magnetico.spdx.json /var/lib/db/sbom/magnetico.spdx.json
 ENTRYPOINT ["/usr/bin/magnetico"]
 LABEL org.opencontainers.image.title="magnetico"
 LABEL org.opencontainers.image.description="Autonomous (self-hosted) BitTorrent DHT search engine"

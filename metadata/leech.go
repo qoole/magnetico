@@ -10,9 +10,9 @@ import (
 	"net"
 	"time"
 
-	"tgragnato.it/magnetico/bencode"
-	"tgragnato.it/magnetico/metadata/btconn"
-	"tgragnato.it/magnetico/stats"
+	"tgragnato.it/magnetico/v2/bencode"
+	"tgragnato.it/magnetico/v2/metadata/btconn"
+	"tgragnato.it/magnetico/v2/stats"
 )
 
 const MAX_METADATA_SIZE = 10 * 1024 * 1024
@@ -116,11 +116,11 @@ func (l *Leech) doExHandshake() error {
 		return errors.New("unmarshal rExMessage " + err.Error())
 	}
 
-	if !(0 < rRootDict.MetadataSize && rRootDict.MetadataSize < MAX_METADATA_SIZE) {
+	if rRootDict.MetadataSize <= 0 || rRootDict.MetadataSize >= MAX_METADATA_SIZE {
 		return fmt.Errorf("metadata too big or its size is less than or equal zero")
 	}
 
-	if !(0 < rRootDict.M.UTMetadata && rRootDict.M.UTMetadata < 255) {
+	if rRootDict.M.UTMetadata <= 0 || rRootDict.M.UTMetadata >= 255 {
 		return fmt.Errorf("ut_metadata is not an uint8")
 	}
 
